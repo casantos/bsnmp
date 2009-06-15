@@ -1,0 +1,42 @@
+# Copyright (c) 2003-2003
+#	Fraunhofer Institute for Open Communication Systems (FhG Fokus).
+#	All rights reserved.
+#
+# Author: Harti Brandt <harti@freebsd.org>
+#
+# $Begemot: bsnmp/snmp_mibII/Makefile.in,v 1.5 2005/05/23 09:03:36 brandt_h Exp $
+#
+MOD=	mibII
+SRCS=	${MOD}_tree.c mibII.c mibII_ifmib.c mibII_ip.c			\
+	mibII_interfaces.c mibII_ipaddr.c mibII_ifstack.c		\
+	mibII_rcvaddr.c mibII_nettomedia.c mibII_tcp.c mibII_udp.c	\
+	mibII_route.c
+INCS=	snmp_${MOD}.h
+DEFS=	mibII_tree.def
+MAN3=	snmp_mibII.3
+MANFILTER=	sed -e 's%@MODPATH@%${LIBDIR}/%g'		\
+		    -e 's%@DEFPATH@%${DEFSDIR}/%g'		\
+		    -e 's%@MIBSPATH@%${MIBSDIR}/%g'
+
+XSYM=	ipAddrTable ifTable ifRcvAddressEntry ifMIB ipMIB tcpMIB udpMIB	\
+	ipForward ifIndex linkDown linkUp
+
+LIB=	snmp_${MOD}.la
+SHLIB_MAJOR= 3
+SHLIB_MINOR= 0
+
+CFLAGS+= -I$(srcdir) -I$(srcdir)/../lib -I$(builddir) -I$(srcdir)/../snmpd
+
+CLEANFILES += ${MOD}_oid.h ${MOD}_tree.c ${MOD}_tree.h
+
+# for bootstrapping
+GENSNMPTREE= ${builddir}/../gensnmptree/gensnmptree
+
+$(LIB): ${MOD}_oid.h ${MOD}_tree.h $(SRCS:.c=.lo) 
+	$(LIBTOOL) --mode=link $(CC) $(LDLAGS) -module -o $@ $(SRCS:.c=.lo) -rpath $(libdir) -version-info $(SHLIB_MAJOR):$(SHLIB_MINOR)
+
+${MOD}_oid.h: ${MOD}_tree.def
+	${GENSNMPTREE} <${srcdir}/${MOD}_tree.def -e ${XSYM} >$@
+
+${MOD}_tree.h ${MOD}_tree.c : ${MOD}_tree.def
+	${GENSNMPTREE} <${srcdir}/${MOD}_tree.def -l -p ${MOD}_

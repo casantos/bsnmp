@@ -1,0 +1,13 @@
+This is bsnmp-1.12 and bsnmptools-20060818-01, taken from
+
+    ftp://ftp.freebsd.org/pub/FreeBSD/ports/distfiles/bsnmptools-20060818-01.tar
+    http://people.freebsd.org/~harti/bsnmp/bsnmp-1.12.tar.gz
+
+The include/sys/queue.h file was taken from BSD, via the Debian libc6-dev
+package.
+
+The files under include/bsnmp were generated in order to build bsnmptools on
+android, since the utilities contain "#include <bsnmp/foo.h>".
+
+This file, the Android.mk and Makefile makefiles, and the empty
+MODULE_LICENSE_BSD_LIKE file were added.

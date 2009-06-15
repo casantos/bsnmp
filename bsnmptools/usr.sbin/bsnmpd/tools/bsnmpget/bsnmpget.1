@@ -1,0 +1,204 @@
+.\"
+.\" Copyright (c) 2005-2006 The FreeBSD Project.
+.\"	All rights reserved.
+.\"
+.\" Author: Shteryana Shopova <soc-shteryana@freebsd.org>
+.\" 
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\" 
+.\" THIS SOFTWARE IS PROVIDED BY AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL AUTHOR OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\"
+.\"
+.Dd August 30, 2005
+.Dt BSNMPGET 1
+.Os
+.Sh NAME
+.Nm bsnmpget
+.Nd "a simple tool for sending snmp get requests"
+.Sh SYNOPSIS
+.Nm
+.Op Fl adehn
+.Op Fl b Ar buffersize
+.Op Fl I Ar options
+.Op Fl i Ar filelist
+.Op Fl l Ar filename
+.Op Fl M Ar max-repetitions
+.Op Fl N Ar non-repeaters
+.Op Fl o Ar output
+.Op Fl p Ar pdu
+.Op Fl r Ar retries
+.Op Fl s Ar [trans::][community@][server][:port]
+.Op Fl t Ar timeout
+.Op Fl v Ar version 
+OID 
+.Op Ar OID ... 
+.Sh DESCRIPTION
+.Nm 
+is a simple tool for retrieving the management information from a 
+server using SNMP (Simple Network Managment Protocol).
+Depending on the options it constructs either a SMNP GetRequest, GetNextRequest 
+or a GetBulkRequest packet, fills in the OIDs (object identifiers) of the
+objects whose values will be retrived, waits for a responce and prints it if
+received successfully. 
+.Sh OPTIONS 
+.Pp
+The options are as follows:
+.Bl -tag -width ".It Fl D Ar options"
+.It Fl a
+Skip any sanity checks when adding OIDs to PDU - ingore syntax/access type or 
+for GetPdu allow adding of non-leaf objects.
+.It Fl b Ar buffersize
+Use this to tune the size of the buffers that are used to send and receive
+the packets.
+The default size is 10000 bytes which should be fair enough unless server wants
+to send you a really large octetstring - 65535 is the maximum allowed length
+according to SMIv2 (Structure of Management Information).
+.It Fl d
+Turn debugging on - currently this option will cause the sent and received 
+packets to be dumped to the terminal.
+.It Fl e
+Retry on error.
+When error is returned in responce PDU, resend request removing the variable
+that caused the error until a valid responce is received.
+Use for Get/GetNext PDU.
+.It Fl h
+This option prints a short help text and some options' default values.
+.It Fl I Ar options
+Include each of the files in the list, applying the given options:
+.Bl -tag -width
+.It Cm cut=OID
+This options specifies the initial OID that was cut by
+.Xr gensnmpdef 1
+when producing the file.
+The default value is 1.3.6 which is perfectly OK for all files installed under
+/usr/share/snmp/defs/.
+Use this only if you produced your own files, providing a '-c' option to
+.Xr gensnmpdef 1 .
+.It Cm path=filedir
+The directory where files in the list will be searched.
+.It Cm file=filelist
+The list of files to be added.
+.El
+The suboptions need not necessarily be in the order given but file suboption
+should be last so that the previousy processed suboptions may be applied to each
+of the files in the list.
+Suboptions may be separated either by commas or by white-spaces - the whole
+options string has to be given in double-quotes in that case.
+.It Fl i Ar filelist
+List of files produced by 
+.Xr gensnmpdef 1 where
+.Nm bsnmpget
+will search for the numerical OID to string mapping. Multiple files can be
+provided with multiple -i switches or after a single switch in a list separated
+with commas.
+If a filename begins with a letter, the default directory it will be searched
+under is /usr/share/snmp/defs.
+.It Fl l Ar filename
+When local transport (unix socket) is used, use this option to specify the
+filename of the socket.
+.It Fl M Ar max-repetitions
+Specify value for max-repetitions field in a GetBulk PDU.
+Default is 1.
+.It Fl N Ar non-repeaters
+Specify value for non-repeaters field in a GetBulk PDU.
+Default is 0.
+.It Fl n
+Read input OID and output responce OIDs numerically rather than search for their
+corresponding strings.
+Note that
+.Nm bsnmpget 
+will print numerical OIDs anyway if it can't find their corresponding string in
+the file(s) it uses to lookup the match.
+.It Fl o Ar output
+Specify the way received responce is output - one of : short, verbose or quiet.
+Default is short.
+Verbose will print the variable syntax abbreviated before printing the value and
+quiet will print only received values.
+.It Fl p Ar pdu
+The PDU type to send - one of : get, getnext or getbulk.
+Default is get.
+.It Fl r Ar retries
+Number of request packets to send before giving up if server doesn't respond. 
+Default is 3 if option is not provided.
+One might also want to start counting from 0 instead of 1 - thus if value 2 is
+provided 
+.Nm bsnmpget
+will actually send three packets (there's a bug somewhere in the code that needs
+to be fixed).
+.It Fl s Ar trans:: Ns Ar community@ Ns Ar server Ns Ar :port
+Each of the server specifications components is optional but at least one should
+be provided after the '-s' option.
+Server specification is constructed in the following manner:
+.Bl -tag -width 
+.It Cm trans::
+Transport type may be one of  udp, stream or dgram.
+If this option is not provided udp will be used, which is the typical.
+stream stands for local stream socket and dgram is for local datagram socket.
+.It Cm community@
+Specify a SNMP community string to be used when sending packets.
+If option is skipped the default "public" will be used.
+.It Cm server
+This might be either the server's ip address or the server's hostname.
+If skipped a request to localhost will be sent.
+.It Cm port
+The destination port to send the requests to.
+The default port on which SNMP agents listen is 161 but if you know your agent
+is listening on some other port you migth want to use that.
+.El
+.It Fl t Ar timeout
+Number of seconds before resending the request packet if server doesn't respond
+ - the default value is 3 sec.
+.It Fl v Ar version
+Set the SNMP protocol version to use when sending the requests.
+Currently only SNMP version 1 and 2 are supported - if no version option is
+provided
+.Nm bsnmpget 
+will use a SNMPv2.
+Note that GetBulkRequest PDUs were introduced in SNMPv2 so setting the version
+to 1 is incompatiable with sending a GetBulk PDU.
+.It OID
+The object identifier whose value is to be retrived.
+At least one OID should be provided to 
+.Nm bsnmpget
+to be able to send a request.
+Any of formats used to print a single variable by
+.Nm bsnmpget
+is valid for inpit OID as well:
+.Bl -tag -width
+.It 1.3.6.1.2.1.25.1.1.0
+.It sysDescr
+.It ifPhysAddress.1
+.It ifRcvAddressStatus.2.6.255.255.255.255.255.255
+.It ifRcvAddressType[2,ff:ff:ff:ff:ff:ff]
+.It ifRcvAddressStatus[Integer:1,OctetString:ff:ff:ff:ff:ff:ff] (requires '-o
+verbose' option)
+.El
+Square brackets are used to denote an entry's indexes.
+When used in input OID, the OID has to be closed in double-quotes.
+Note there is no difference between ifName.1 and "ifName[1]".
+.El
+.Sh SEE ALSO
+.Xr gensnmpdef 1 ,
+.Xr bsnmpwalk 1 ,
+.Xr bsnmpset 1
+.Sh AUTHORS
+.An Shteryana Shopova Aq shteryana@freebsd.org
+.Sh BUGS
+Many.
