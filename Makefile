@@ -225,7 +225,7 @@ $(BSNMPTEST): $(BSNMPTEST_OBJS) $(TOOLS_LIB) $(BSNMP_LIB) $(BSNMP_CLIENT_LIB)
 	$(CC) -o $@ $(BSNMPTEST_OBJS) $(TOOLS_LDFLAGS)
 
 clean:
-	rm -f -r $(BIN_DIR) $(OBJ_DIR) $(LIB_DIR)
+	rm -f -r $(BIN_DIR)/* $(OBJ_DIR)/* $(LIB_DIR)/*
 
 ifneq ($(MAKECMDGOALS),clean)
 include $(DEPENDS)
