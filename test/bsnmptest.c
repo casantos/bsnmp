@@ -62,16 +62,13 @@
 #define GET_PDUTYPE(tool)	(((tool).flags & PDUTYPE_BITS) >> 8)
 
 static int
-snmptest_parse_oid(struct snmp_toolinfo *tool, struct snmp_object *obj, char *argv)
+snmptest_parse_oid(struct snmp_toolinfo *tool, struct snmp_object *obj, char *n_oid)
 {
-	if (argv == NULL || !ISSET_NUMERIC(*tool))
-		return (-1);
-
-	return (snmp_parse_numoid(argv, &(obj->val.var)));
+	return (snmp_parse_numoid(n_oid, &(obj->val.var)));
 }
 
 static int
-snmpget_add_vbind(struct snmp_pdu *pdu,struct snmp_object *obj)
+snmptest_add_vbind(struct snmp_pdu *pdu,struct snmp_object *obj)
 {
 	if (pdu->nbindings > SNMP_MAX_BINDINGS) {
 		warnx("Too many bindings in PDU");
@@ -96,50 +93,57 @@ int
 main(int argc, char ** argv)
 {
 	struct snmp_toolinfo *tool;
-	struct snmp_client *client_context;
+	struct snmp_client *client;
 	struct snmp_pdu req, resp;
 	struct sockaddr_in addr;
 	int fd;
-	u_char * buf = NULL;
-	char * s_addr;
-	char * s_oid;
+        int i;
+	/* u_char * buf = NULL; */
 
-	s_addr = (argc > 1) ? argv[1] : "16.127.73.182";
-	s_oid  = (argc > 2) ? argv[2] : "1.3.6.1.4.1.11.2.3.9.1.1.7.0";
+	if (argc < 2) {
+		errx(1, "Missing host argument");
+	}
+
+	if (argc < 3) {
+		errx(1, "Must provide at lease one OID");
+	}
 
 	tool = snmptool_init(NULL);
 	if (tool == NULL)
 		return (1);
-	client_context = tool->client;
+	client = tool->client;
 
 	SET_NUMERIC(*tool);
-	client_context->version = SNMP_V1;
+	client->version = SNMP_V1;
 
 	fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	addr.sin_family = PF_INET;
 	addr.sin_port = htons(161);
-	inet_pton(PF_INET, s_addr, &addr.sin_addr);
+	inet_pton(PF_INET, argv[1], &addr.sin_addr);
 	connect(fd, (struct sockaddr *)&addr, sizeof(addr));
-	if (snmp_fd_open(client_context, fd, NULL, NULL)) {
+	if (snmp_fd_open(client, fd, NULL, NULL)) {
 	    snmp_tool_freeall(tool);
 	    err(1, "Failed to open SNMP session");
 	}
 
-	if (snmp_object_add(tool, snmptest_parse_oid, s_oid) < 0) {
-		snmp_tool_freeall(tool);
-		return (1);
+        for (i = argc - 1; i > 1; i--) {
+		if (snmp_object_add(tool, snmptest_parse_oid, argv[i]) < 0) {
+			snmp_tool_freeall(tool);
+			return (1);
+		}
 	}
 
-	snmp_pdu_create(client_context, &req, GET_PDUTYPE(*tool));
+	snmp_pdu_create(client, &req, GET_PDUTYPE(*tool));
 
-	if (snmp_pdu_add_bindings(tool, NULL, snmpget_add_vbind, &req) <= 0) {
+	if (snmp_pdu_add_bindings(tool, NULL, snmptest_add_vbind, &req) <= 0) {
 		warnx("ADD bindings");
 		goto err_exit;
 	}
 
-	if (snmp_dialog(client_context, &req, &resp) < 0)
+	if (snmp_dialog(client, &req, &resp) < 0)
 		warn("SNMP dialog");
-	else if (snmp_parse_resp(client_context, &resp, &req) >= 0 /* SNMP_ERR_NOERROR */) {
+	else if (snmp_parse_resp(client, &resp, &req) >= SNMP_ERR_NOERROR) {
+#if 0
 		if ((buf = snmp_oct2tc(SNMP_STRING,
 			resp.bindings[0].v.octetstring.len,
 			resp.bindings[0].v.octetstring.octets)) != NULL) {
@@ -147,20 +151,8 @@ main(int argc, char ** argv)
 			free(buf);
 		} else
 			warnx("snmp_oct2tc");
-	} else
-		snmp_output_err_resp(tool, &resp);
-	snmp_pdu_free(&resp);
-
-	if (snmp_dialog(client_context, &req, &resp) < 0)
-		warn("SNMP dialog");
-	else if (snmp_parse_resp(client_context, &resp, &req) >= 0 /* SNMP_ERR_NOERROR */) {
-		if ((buf = snmp_oct2tc(SNMP_STRING,
-			resp.bindings[0].v.octetstring.len,
-			resp.bindings[0].v.octetstring.octets)) != NULL) {
-			fprintf(stdout, "%s\n", buf);
-			free(buf);
-		} else
-			warnx("snmp_oct2tc");
+#endif
+		snmp_output_resp(tool, &resp);
 	} else
 		snmp_output_err_resp(tool, &resp);
 	snmp_pdu_free(&resp);
