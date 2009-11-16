@@ -96,9 +96,7 @@ main(int argc, char ** argv)
 	struct snmp_client *client;
 	struct snmp_pdu req, resp;
 	struct sockaddr_in addr;
-	int fd;
-        int i;
-	/* u_char * buf = NULL; */
+	int fd, i, j, ch;
 
 	if (argc < 2) {
 		errx(1, "Missing host argument");
@@ -114,6 +112,7 @@ main(int argc, char ** argv)
 	client = tool->client;
 
 	SET_NUMERIC(*tool);
+	SET_OUTPUT(*tool, OUTPUT_QUIET);
 	client->version = SNMP_V1;
 
 	fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -122,11 +121,11 @@ main(int argc, char ** argv)
 	inet_pton(PF_INET, argv[1], &addr.sin_addr);
 	connect(fd, (struct sockaddr *)&addr, sizeof(addr));
 	if (snmp_fd_open(client, fd, NULL, NULL)) {
-	    snmp_tool_freeall(tool);
-	    err(1, "Failed to open SNMP session");
+		snmp_tool_freeall(tool);
+		err(1, "Failed to open SNMP session");
 	}
 
-        for (i = argc - 1; i > 1; i--) {
+	for (i = argc - 1; i > 1; i--) {
 		if (snmp_object_add(tool, snmptest_parse_oid, argv[i]) < 0) {
 			snmp_tool_freeall(tool);
 			return (1);
@@ -143,18 +142,28 @@ main(int argc, char ** argv)
 	if (snmp_dialog(client, &req, &resp) < 0)
 		warn("SNMP dialog");
 	else if (snmp_parse_resp(client, &resp, &req) >= SNMP_ERR_NOERROR) {
-#if 0
-		if ((buf = snmp_oct2tc(SNMP_STRING,
-			resp.bindings[0].v.octetstring.len,
-			resp.bindings[0].v.octetstring.octets)) != NULL) {
-			fprintf(stdout, "%s\n", buf);
-			free(buf);
-		} else
-			warnx("snmp_oct2tc");
-#endif
-		snmp_output_resp(tool, &resp);
+		for (i = 0; i < resp.nbindings; i++) {
+			switch (resp.bindings[i].syntax) {
+			case SNMP_SYNTAX_INTEGER:
+				fprintf(stdout, "%d", resp.bindings[i].v.integer);
+				break;
+			case SNMP_SYNTAX_OCTETSTRING:
+				fprintf(stdout, "\"");
+				for (j = 0; j < resp.bindings[i].v.octetstring.len; j++) {
+					ch = resp.bindings[i].v.octetstring.octets[j];
+					fprintf(stdout, isprint(ch) ? "%c" : "\\x%02x", ch);
+				}
+				fprintf(stdout, "\"");
+				break;
+			default:
+				fprintf(stdout, "recognized syntaxes are INTEGER and OCTETSTRING");
+				break;
+			}
+			fprintf(stdout, "\n");
+		}
 	} else
 		snmp_output_err_resp(tool, &resp);
+
 	snmp_pdu_free(&resp);
 
 err_exit:
