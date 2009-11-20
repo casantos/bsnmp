@@ -98,7 +98,10 @@ main(int argc, char ** argv)
 	struct snmp_toolinfo *tool;
 	struct snmp_client *client_context;
 	struct snmp_pdu req, resp;
-	struct sockaddr_in addr;
+	union {
+		struct sockaddr    sa;
+		struct sockaddr_in in;
+	} sa;
 	int fd;
 	u_char * buf = NULL;
 	char * s_addr;
@@ -116,10 +119,10 @@ main(int argc, char ** argv)
 	client_context->version = SNMP_V1;
 
 	fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	addr.sin_family = PF_INET;
-	addr.sin_port = htons(161);
-	inet_pton(PF_INET, s_addr, &addr.sin_addr);
-	connect(fd, (struct sockaddr *)&addr, sizeof(addr));
+	sa.in.sin_family = PF_INET;
+	sa.in.sin_port = htons(161);
+	inet_pton(PF_INET, argv[1], &sa.in.sin_addr);
+	connect(fd, &sa.sa, sizeof(sa.in));
 	if (snmp_fd_open(client_context, fd, NULL, NULL)) {
 	    snmp_tool_freeall(tool);
 	    err(1, "Failed to open SNMP session");
