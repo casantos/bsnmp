@@ -5,6 +5,7 @@
 ###############################################################################
 
 MKDIR := mkdir -p
+RMDIR := rm -r -f
 
 OBJ_DIR := obj
 BIN_DIR := bin
@@ -227,6 +228,9 @@ $(BSNMPTEST): $(BSNMPTEST_OBJS) $(TOOLS_LIB) $(BSNMP_LIB) $(BSNMP_CLIENT_LIB)
 clean:
 	rm -f -r $(BIN_DIR)/* $(OBJ_DIR)/* $(LIB_DIR)/*
 
-ifneq ($(MAKECMDGOALS),clean)
+distclean omo:
+	$(RMDIR) $(BIN_DIR) $(OBJ_DIR) $(LIB_DIR)
+
+ifeq ($(MAKECMDGOALS),)
 include $(DEPENDS)
 endif

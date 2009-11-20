@@ -977,7 +977,10 @@ remove_local(struct snmp_client *client)
 static int
 open_client_local(struct snmp_client *client, const char *path)
 {
-	struct sockaddr_un sa;
+	union {
+		struct sockaddr    sa;
+		struct sockaddr_un un;
+	} sa;
 	char *ptr;
 	int stype;
 
@@ -1013,13 +1016,13 @@ open_client_local(struct snmp_client *client, const char *path)
 		return (-1);
 	}
 
-	sa.sun_family = AF_LOCAL;
+	sa.un.sun_family = AF_LOCAL;
 #if defined(HAVE_SUN_LEN)
-	sa.sun_len = sizeof(sa);
+	sa.un.sun_len = sizeof(sa.un);
 #endif
-	strcpy(sa.sun_path, client->local_path);
+	strcpy(sa.un.sun_path, client->local_path);
 
-	if (bind(client->fd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
+	if (bind(client->fd, &sa.sa, sizeof(struct sockaddr_un)) == -1) {
 		seterr(client, "%s", strerror(errno));
 		(void)close(client->fd);
 		client->fd = -1;
@@ -1033,19 +1036,19 @@ open_client_local(struct snmp_client *client, const char *path)
 	atexit(remove_local);
 #endif
 
-	sa.sun_family = AF_LOCAL;
+	sa.un.sun_family = AF_LOCAL;
 #if defined(HAVE_SUN_LEN)
-	sa.sun_len = offsetof(struct sockaddr_un, sun_path) +
+	sa.un.sun_len = offsetof(struct sockaddr_un, sun_path) +
 	    strlen(client->chost);
-#define SA_SUN_LEN sa.sun_len
+#define SA_SUN_LEN sa.un.sun_len
 #else
 #define SA_SUN_LEN   offsetof(struct sockaddr_un, sun_path) + \
 	    strlen(client->chost)
 #endif
-	strncpy(sa.sun_path, client->chost, sizeof(sa.sun_path) - 1);
-	sa.sun_path[sizeof(sa.sun_path) - 1] = '\0';
+	strncpy(sa.un.sun_path, client->chost, sizeof(sa.un.sun_path) - 1);
+	sa.un.sun_path[sizeof(sa.un.sun_path) - 1] = '\0';
 
-	if (connect(client->fd, (struct sockaddr *)&sa, SA_SUN_LEN) == -1) {
+	if (connect(client->fd, &sa.sa, SA_SUN_LEN) == -1) {
 		seterr(client, "%s", strerror(errno));
 		(void)close(client->fd);
 		client->fd = -1;
