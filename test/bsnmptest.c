@@ -145,14 +145,14 @@ main(int argc, char ** argv)
 	if (snmp_dialog(client, &req, &resp) < 0)
 		warn("SNMP dialog");
 	else if (snmp_parse_resp(client, &resp, &req) >= SNMP_ERR_NOERROR) {
-		for (i = 0; i < resp.nbindings; i++) {
+		for (i = 0; i < (int) resp.nbindings; i++) {
 			switch (resp.bindings[i].syntax) {
 			case SNMP_SYNTAX_INTEGER:
 				fprintf(stdout, "%d", resp.bindings[i].v.integer);
 				break;
 			case SNMP_SYNTAX_OCTETSTRING:
 				fprintf(stdout, "\"");
-				for (j = 0; j < resp.bindings[i].v.octetstring.len; j++) {
+				for (j = 0; j < (int) resp.bindings[i].v.octetstring.len; j++) {
 					ch = resp.bindings[i].v.octetstring.octets[j];
 					fprintf(stdout, isprint(ch) ? "%c" : "\\x%02x", ch);
 				}
