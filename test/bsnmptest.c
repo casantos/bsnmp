@@ -123,7 +123,7 @@ main(int argc, char ** argv)
 	sa.in.sin_port = htons(161);
 	inet_pton(PF_INET, argv[1], &sa.in.sin_addr);
 	connect(fd, &sa.sa, sizeof(sa.in));
-	if (snmp_fd_open(client_context, fd, NULL, NULL)) {
+	if (snmp_fd_open(client, fd, NULL, NULL)) {
 		snmp_tool_freeall(tool);
 		err(1, "Failed to open SNMP session");
 	}
