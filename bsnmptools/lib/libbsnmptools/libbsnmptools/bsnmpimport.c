@@ -265,6 +265,9 @@ tungetc(int c)
  * Parsing input
  */
 enum tok {
+	TOK_LPAREN = '(',
+	TOK_RPAREN = ')',
+	TOK_COLON = ':',
 	TOK_EOF = 0200,	/* end-of-file seen */
 	TOK_NUM,	/* number */
 	TOK_STR,	/* string */
@@ -785,7 +788,7 @@ snmp_import_object(struct snmp_toolinfo *tool)
 	 */
 
 	switch (tok = gettoken(tool)) {
-		case  ')':
+		case  TOK_RPAREN:
 			if ((i = snmp_enum_insert(tool, oid2str)) < 0)
 				goto error;
 			if (i == 0) {
@@ -793,7 +796,7 @@ snmp_import_object(struct snmp_toolinfo *tool)
 				free(oid2str);
 			}
 			return (1);
-		case '(':
+		case TOK_LPAREN:
 			if (snmp_suboid_append(&current_oid, (asn_subid_t) val) < 0)
 				goto error;
 
@@ -807,7 +810,7 @@ snmp_import_object(struct snmp_toolinfo *tool)
 				free(oid2str);
 			}
 			return (snmp_import_object(tool));
-		case ':':
+		case TOK_COLON:
 			if (snmp_suboid_append(&current_oid, (asn_subid_t) val) < 0)
 				goto error;
 			if (snmp_import_table(tool, oid2str) < 0)
@@ -841,11 +844,11 @@ snmp_import_tree(struct snmp_toolinfo *tool, enum tok *tok)
 		switch (*tok) {
 		    case TOK_ERR:
 			return (-1);
-		    case '(':
+		    case TOK_LPAREN:
 			if (snmp_import_object(tool) < 0)
 			    return (-1);
 			break;
-		    case ')':
+		    case TOK_RPAREN:
 			if (snmp_suboid_pop(&current_oid) < 0)
 			    return (-1);
 			(void) snmp_import_update_table(ENTRY_NONE,
