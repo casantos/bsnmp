@@ -661,7 +661,7 @@ snmp_pdu_encode(struct snmp_pdu *pdu, struct asn_buf *resp_b)
 	if ((err = snmp_pdu_encode_header(resp_b, pdu)) != SNMP_CODE_OK)
 		return (err);
 	for (idx = 0; idx < pdu->nbindings; idx++)
-		if ((err = snmp_binding_encode(resp_b, &pdu->bindings[idx]))
+		if (snmp_binding_encode(resp_b, &pdu->bindings[idx])
 		    != ASN_ERR_OK)
 			return (SNMP_CODE_FAILED);
 
