@@ -1,1 +1,10 @@
-external/bsnmp
+Copyright (c) 1996-2003 Fraunhofer Fokus. All rights reserved.
+Copyright (c) 2005-2006 The FreeBSD Project
+
+This repository contains the code of bsnmp and bsnmptools as distributed by HP
+as part of the Compaq Airlife 100 netbook, HP Photosmart eStation C510 printer,
+webOS and the HP iPrint Photo and HP ePrint Home&Biz applications for Android.
+
+Modificantions made by HP are distributed with permission from Hewlett Packard
+Development Company, according to Open Source Review Board proposals 3387 and
+11463.
