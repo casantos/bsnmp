@@ -623,7 +623,7 @@ static int
 snmp_index_insert(struct snmp_idxlist *headp, struct index *idx)
 {
 
-	if (headp == NULL || index == NULL)
+	if (headp == NULL || idx == NULL)
 		return (-1);
 
 	if (STAILQ_EMPTY(headp))

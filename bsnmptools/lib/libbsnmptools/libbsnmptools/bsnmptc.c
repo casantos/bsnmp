@@ -833,11 +833,11 @@ parse_ntp_ts(struct snmp_value * value, char * val)
 	saved_errno = errno;
 	v = strtoul(val, &endptr, 10);
 	if (errno != 0 || (v / 1000) > 9) {
-		saved_errno = errno;
 		warnx("Integer value %s not supported", val);
+		errno = saved_errno;
 		return (-1);
 	} else
-		saved_errno = errno;
+		errno = saved_errno;
 
 	if(*endptr != '.') {
 		warnx("Failed reading octet - %s", val);
@@ -853,11 +853,11 @@ parse_ntp_ts(struct snmp_value * value, char * val)
 	saved_errno = errno;
 	v = strtoul(val, &endptr, 10);
 	if (errno != 0 || (v / 1000) > 9) {
-		saved_errno = errno;
 		warnx("Integer value %s not supported", val);
+		errno = saved_errno;
 		return (-1);
 	} else
-		saved_errno = errno;
+		errno = saved_errno;
 
 	for (i = 0, d = 1000; i < 4; i++) {
 		ntp_ts[i + 4] = v/d;
@@ -983,12 +983,11 @@ snmp_bridgeid2oct(char *str, struct asn_oid *oid)
 static int
 parse_bridge_id(struct snmp_value *value, char *string)
 {
-	char 	 *ptr, *endptr;
+	char 	 *endptr;
 	int 	 i, saved_errno;
 	uint32_t v;
 	u_char	 bridge_id[SNMP_BRIDGEID_OCTETS];
 
-	ptr = string;
 	/* read  the priority */
 	saved_errno = errno;
 	errno = 0;
@@ -1111,12 +1110,11 @@ snmp_bport_id2oct(char *str, struct asn_oid *oid)
 static int
 parse_bport_id(struct snmp_value *value, char *string)
 {
-	char 	 *ptr, *endptr;
+	char 	 *endptr;
 	int 	 saved_errno;
 	uint32_t v;
 	u_char	 bport_id[SNMP_BPORT_OCTETS];
 
-	ptr = string;
 	/* read  the priority */
 	saved_errno = errno;
 	errno = 0;
